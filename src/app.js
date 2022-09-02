@@ -52,4 +52,14 @@ app.post("/participants", async (req, res) => {
     }
 })
 
+app.get("/participants", async (req, res) => {
+    try {
+        const participants = await db.collection("participants").find().toArray()
+        res.send(participants)
+    } catch {
+        res.sendStatus(500)
+        return
+    }
+})
+
 app.listen(5000, () => {console.log("Listen on 5000")});
