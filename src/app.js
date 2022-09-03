@@ -44,7 +44,7 @@ app.post("/participants", async (req, res) => {
         }
         await db.collection("participants").insertOne({name: req.body.name, lastStatus: Date.now()})
         await db.collection("messages").insertOne({from: req.body.name, to: "Todos", text: "entra na sala...", type: "status", time: dayjs().format().split("T")[1].split("-")[0]})
-        res.sendStatus(201)
+        res.status(201)
         return
     } catch {
         res.sendStatus(500)
@@ -56,6 +56,24 @@ app.get("/participants", async (req, res) => {
     try {
         const participants = await db.collection("participants").find().toArray()
         res.send(participants)
+    } catch {
+        res.sendStatus(500)
+        return
+    }
+})
+
+app.post("/messages", async (req, res) => {
+    try {
+        const validate = messageSchema.validate(req.body, { abortEarly: true} )
+        const checkName = await db.collection("participants").findOne({name: req.headers.user})
+        if (validate.error || !checkName) {
+            res.sendStatus(422)
+            return
+        }
+        const messageComplete = {from: req.headers.user, to: req.body.to, text: req.body.text, type: req.body.type, time: dayjs().format().split("T")[1].split("-")[0]}
+        await db.collection("messages").insertOne(messageComplete)
+        res.sendStatus(201)
+        return
     } catch {
         res.sendStatus(500)
         return
