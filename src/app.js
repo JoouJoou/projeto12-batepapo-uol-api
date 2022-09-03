@@ -89,7 +89,7 @@ app.get("/messages", async (req, res) => {
             const limitedMessages = []
             for (let i = 0; i < limit; i++) {
                 const msg = messages.pop()
-                if (msg.to === user || msg.to === "Todos") {
+                if (msg.to === user || msg.to === "Todos" || msg.from === user) {
                     limitedMessages.push(msg)
                 }
             }
@@ -100,7 +100,7 @@ app.get("/messages", async (req, res) => {
             const allMessages = []
             for (let i = 0; i < messages.length; i++) {
                 const msg = messages.pop()
-                if (msg.to === user || msg.to === "Todos") {
+                if (msg.to === user || msg.to === "Todos" || msg.from === user) {
                     allMessages.push(msg)
                 }
             }
@@ -108,6 +108,25 @@ app.get("/messages", async (req, res) => {
             return
         }
 
+    } catch {
+        res.sendStatus(500)
+        return
+    }
+})
+
+app.post("/status", async (req, res) => {
+    try {
+        const user = req.headers.user
+        const checkName = await db.collection("participants").findOne({name: user})
+        if (!checkName) {
+            res.sendStatus(404)
+            return
+        }
+        await db.collection("participants").updateOne({
+            _id: checkName._id
+        }, {$set: {lastStatus: Date.now()}})
+        res.sendStatus(200)
+        return
     } catch {
         res.sendStatus(500)
         return
