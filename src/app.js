@@ -7,7 +7,7 @@ import dotenv from "dotenv";
 
 dotenv.config()
 
-console.log(dayjs().format().split("T")[1].split("-")[0])
+console.log(dayjs(new Date()).format('HH:mm:ss'))
 console.log(Date.now())
 
 const app = express();
@@ -43,8 +43,8 @@ app.post("/participants", async (req, res) => {
             return
         }
         await db.collection("participants").insertOne({name: req.body.name, lastStatus: Date.now()})
-        await db.collection("messages").insertOne({from: req.body.name, to: "Todos", text: "entra na sala...", type: "status", time: dayjs().format().split("T")[1].split("-")[0]})
-        res.status(201)
+        await db.collection("messages").insertOne({from: req.body.name, to: "Todos", text: "entra na sala...", type: "status", time: dayjs(new Date()).format('HH:mm:ss')})
+        res.status(201).send("Entrei")
         return
     } catch {
         res.sendStatus(500)
@@ -70,10 +70,44 @@ app.post("/messages", async (req, res) => {
             res.sendStatus(422)
             return
         }
-        const messageComplete = {from: req.headers.user, to: req.body.to, text: req.body.text, type: req.body.type, time: dayjs().format().split("T")[1].split("-")[0]}
+        const messageComplete = {from: req.headers.user, to: req.body.to, text: req.body.text, type: req.body.type, time: dayjs(new Date()).format('HH:mm:ss')}
         await db.collection("messages").insertOne(messageComplete)
         res.sendStatus(201)
         return
+    } catch {
+        res.sendStatus(500)
+        return
+    }
+})
+
+app.get("/messages", async (req, res) => {
+    try {
+        const limit = parseInt(req.query.limit)
+        const messages = await db.collection("messages").find().toArray()
+        const user = req.headers.user
+        if (limit) {
+            const limitedMessages = []
+            for (let i = 0; i < limit; i++) {
+                const msg = messages.pop()
+                if (msg.to === user || msg.to === "Todos") {
+                    limitedMessages.push(msg)
+                }
+            }
+            res.send(limitedMessages.reverse())
+            return
+        }
+        else {
+            const allMessages = []
+            for (let i = 0; i < messages.length; i++) {
+                const msg = messages.pop()
+                if (msg.to === user || msg.to === "Todos") {
+                    allMessages.push(msg)
+                }
+            }
+            res.send(allMessages)
+            return
+        }
+
     } catch {
         res.sendStatus(500)
         return
