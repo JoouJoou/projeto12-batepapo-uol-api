@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
 import joi from "joi";
-import { MongoClient } from "mongodb";
+import { MongoClient, ObjectId } from "mongodb";
 import dayjs from "dayjs";
 import dotenv from "dotenv";
 
@@ -29,6 +29,20 @@ let db;
 mongoClient.connect().then(() => {
     db = mongoClient.db("batepapouol")
 })
+
+setInterval(async () => {
+    try {
+        const participants = await db.collection("participants").find().toArray()
+        for (let i = 0; i < participants.length; i++) {
+            const user = participants[i]
+            if (Date.now()-user.lastStatus > 10000) {
+                await db.collection("participants").deleteOne({name: user.name})
+            }
+        }
+    } catch {
+        res.sendStatus(500)
+    }
+}, 15000)
 
 app.post("/participants", async (req, res) => {
     try {
